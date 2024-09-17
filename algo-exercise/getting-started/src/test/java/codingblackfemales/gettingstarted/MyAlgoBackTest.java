@@ -25,10 +25,11 @@ public class MyAlgoBackTest extends AbstractAlgoBackTest {
     @Test
     public void testExampleBackTest() throws Exception {
         //create a sample market data tick....
+       
         send(createTick());
 
         //ADD asserts when you have implemented your algo logic
-        //assertEquals(container.getState().getChildOrders().size(), 3);
+        // assertEquals(container.getState().getChildOrders().size(), 3);
 
         //when: market data moves towards us
         send(createTick2());

@@ -25,12 +25,13 @@ public class SniperAlgoLogic implements AlgoLogic {
         logger.info("[SNIPERALGO] Algo Sees Book as:\n" + book);
 
         final AskLevel farTouch = state.getAskAt(0);
+        //gets the best available ask price in market
 
         //take as much as we can from the far touch....
         long quantity = farTouch.quantity;
         long price = farTouch.price;
 
-        //until we have three child orders....
+        //until we have five child orders....
         if (state.getChildOrders().size() < 5) {
             //then keep creating a new one
             logger.info("[SNIPERALGO] Have:" + state.getChildOrders().size() + " children, want 5, sniping far touch of book with: " + quantity + " @ " + price);
