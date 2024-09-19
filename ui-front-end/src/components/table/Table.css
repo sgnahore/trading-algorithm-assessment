@@ -1,0 +1,31 @@
+table {
+    width: 40%;
+    border-collapse: collapse;
+    margin-left: 30%;
+    
+  }
+  th, td {
+    border: 1px solid black;
+    padding: 2px;
+    text-align: left;
+  }
+  th {
+    background-color: #f2f2f2;
+    text-align: center;
+
+  }
+
+
+
+  .offer{
+    color: #f2f2f2;
+    
+    /* background-color: red; */
+    background: linear-gradient(90deg, #b20a26 50%, #ffffff 50%);
+  }
+
+  .levels{
+    text-align: center;
+
+  }
+  

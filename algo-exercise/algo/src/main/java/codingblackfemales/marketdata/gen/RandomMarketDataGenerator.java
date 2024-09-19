@@ -55,6 +55,7 @@ public class RandomMarketDataGenerator implements MarketDataGenerator {
         return updateBook();
     }
 
+    //fulfills two orders: buy side and sell side
     public void initBook() {
         bid = rand(mid - priceMaxDelta, mid - 1);
         ask = rand(mid + 1, mid + priceMaxDelta);
@@ -91,6 +92,7 @@ public class RandomMarketDataGenerator implements MarketDataGenerator {
         Sell
     }
 
+    //randomly chooses how many updates to make
     public MarketDataMessage updateBook() {
         int updateCount = toIntExact(rand(1, 3));
         boolean buyUpdated = false;
