@@ -12,9 +12,6 @@ import codingblackfemales.action.CancelChildOrder;
 import codingblackfemales.action.CreateChildOrder;
 import codingblackfemales.sotw.marketdata.BidLevel;
 import messages.order.Side;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Comparator;
 
 public class MyAlgoLogic implements AlgoLogic {
 
@@ -29,99 +26,91 @@ public class MyAlgoLogic implements AlgoLogic {
         var totalOrderCount = state.getChildOrders().size();
 
         //exit condition...
-        final var currentOrders = state.getActiveChildOrders();
-        BidLevel firstBid = state.getBidAt(0);
+        //to define the spread
         BidLevel finalBid = state.getBidAt(state.getBidLevels() - 1);
-        AskLevel firstAsk = state.getAskAt(0);
         AskLevel finalAsk = state.getAskAt(state.getAskLevels() - 1);
         final long spread = finalAsk.getPrice() - finalBid.getPrice();
-        final long spreadThreshold = 2;
 
-        if (totalOrderCount > 5 && spread < spreadThreshold) {
+        //hard coded spread for reference, to be made dynamic
+        final long spreadThreshold = 10;
+
+        //if there are active orders and the spread is greater than the threshold
+        if (totalOrderCount > 0 && spread > spreadThreshold) {
             logger.info("[MYALGO] Exiting market, spread is too wide to trade! Current spread: " + spread);
-
             return NoAction.NoAction;
-
         }
 
-//        long vwap = totalPriceVolume / totalQuantity;
 
-        List<Long> bidPrices = new ArrayList<>();
-        List<Long> bidQuantities = new ArrayList<>();
+        //extra variables for later
+        final var currentOrders = state.getActiveChildOrders();
+        BidLevel firstBid = state.getBidAt(0);
+        AskLevel firstAsk = state.getAskAt(0);
 
+
+        //vwap logic
         int availableBidLevels = Math.min(5, state.getBidLevels());  // Limit to 5 or the number of available bid levels
-
-
-        double totalValue = 0.0; // Initialize total value
+        double totalVolume = 0.0;
         long totalQuantity = 0;
 
-        // Add the first 5 bid levels (or fewer, if fewer exist)
         for (int i = 0; i < availableBidLevels; i++) {
-            BidLevel eachPrice = state.getBidAt(i);
-            BidLevel eachQuantity = state.getBidAt(i);
-            final long prices = eachPrice.getPrice();
-            bidPrices.add(prices);
+            BidLevel bidLevel = state.getBidAt(i);
 
-            final long quantities = eachQuantity.getQuantity();
-            bidQuantities.add(quantities);
+            final long prices = bidLevel.getPrice();
+            final long quantities = bidLevel.getQuantity();
 
             final long value = prices * quantities;
-totalValue += value;
-totalQuantity += bidQuantities.get(i);
-
-
+            totalVolume += value;
+            totalQuantity += quantities;
         }
-//        for (int i = 0; i < bidPrices.size(); i++) {
-//            totalValue += bidPrices.get(i) * bidQuantities.get(i); // Sum up (price × quantity)
-//            totalQuantity += bidQuantities.get(i);
-//        }
 
         double vwap = 0.0;
         if (totalQuantity != 0) {
-            vwap = totalValue / totalQuantity;
+            vwap = totalVolume / totalQuantity;
         }
-        logger.info("[MYALGO] VWAP: " + vwap);
+        final long vwapThreshold = 150;
 
-        //cancel order if price is too high
-        if (!currentOrders.isEmpty()) {
+        logger.info("[MYALGO] The current volume weighted average price is: " + vwap);
 
-            final var firstOrder = currentOrders.stream().findFirst();
-            logger.info("[MYALGO] Current order details: ID:" + firstOrder.get().getOrderId() + "Price: " + firstOrder.get().getPrice());
+        if (!currentOrders.isEmpty() && state.getChildOrders().size() < 3) {
 
-                var childOrder = firstOrder.get();
+            //cancel order if price is too high
+
+            // Iterate through all active orders
+            for (var childOrder : currentOrders) {
+//                if() {
                 //stoploss condition
-                final long threshold = 200;
+//
+//            if (childOrder.getPrice() > threshold && childOrder.getQuantity() < 100) {
+//                logger.info("[MYALGO] Cancelling order as quantity too low and threshold too high. \n order details: " + "price: " + childOrder.getPrice() + " quantity: " + childOrder.getQuantity() + " as it's above the price threshold: " + threshold);
+//                return new CancelChildOrder(childOrder);
+//              } else {
+                logger.info("[MYALGO] Evaluating order: ID:" + childOrder.getOrderId() + " Price: " +
+                        childOrder.getPrice() + " Quantity: " + childOrder.getQuantity());
 
-            if (childOrder.getPrice() > threshold && childOrder.getQuantity() < 100) {
-                logger.info("[MYALGO] Cancelling order: " + "price: " + childOrder.getPrice() + " quantity: " + childOrder.getQuantity() + " as it's above the price threshold: " + threshold);
-                return new CancelChildOrder(childOrder);
+                final long quantityThreshold = 80;
 
-              } else {
-                logger.info("[MYALGO] Current order details: " + childOrder);
-
-                final long quantityThreshold = 90;
-
-                // Check if the quantity exceeds the threshold
+                // Check if the quantity is below the threshold
                 if (childOrder.getQuantity() < quantityThreshold) {
-                    logger.info("[MYALGO] Cancelling order: " + "price: " + childOrder.getPrice() + " quantity: " + childOrder.getQuantity() + " as it's above the quantity threshold: " + quantityThreshold);
+                    logger.info("[MYALGO] Cancelling order as quantity is less than threshold: " + "price: " + childOrder.getPrice() + " quantity: " + childOrder.getQuantity() + " as it's above the quantity threshold: " + quantityThreshold);
                     return new CancelChildOrder(childOrder);
                 }
-            }
-        } else {
-            //add take profit condition here
 
-            logger.info("[MYALGO] Current bid level;" + firstBid);
-            logger.info("[MYALGO] Last bid is ;" + finalBid);
+                //add logic
+                else if (vwap <= vwapThreshold) {
 
+                    //add take profit condition here
 
-            logger.info("[MYALGO] There are currently " + state.getBidLevels() + " bids present");
+                    logger.info("[MYALGO] There are currently " + state.getBidLevels() + " bids present");
 
-            final long cost = firstBid.price;
-            final long amount = firstBid.quantity;
-            logger.info("[MYALGO] Adding order for" + amount + "@" + cost);
-            return new CreateChildOrder(Side.BUY, amount, cost);
+                    final long cost = firstBid.price;
+                    final long amount = firstBid.quantity;
+                    logger.info("[MYALGO] Adding order for" + amount + "@" + cost);
+                    return new CreateChildOrder(Side.BUY, amount, cost);
                 }
-        return NoAction.NoAction;
             }
-
         }
+        logger.info("[MYALGO] ORDERS COMPLETE");
+
+        return NoAction.NoAction;
+    }
+}

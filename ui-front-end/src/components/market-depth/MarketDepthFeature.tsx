@@ -18,9 +18,7 @@ import Table from "../table/Table";
 //   { symbolLevel:"1239", level: 9, bid: 940, bidQuantity: 200, offer: 1024, offerQuantity: 800 },
 // ];
 
-/**
- * TODO
- */
+
 export const MarketDepthFeature = () => {
   const data = useMarketDepthData(schemas.prices);
   return(

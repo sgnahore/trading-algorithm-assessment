@@ -2,6 +2,8 @@ package codingblackfemales.gettingstarted;
 
 import codingblackfemales.algo.AlgoLogic;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+
 
 /**
  * This test plugs together all of the infrastructure, including the order book (which you can trade against)
@@ -28,7 +30,7 @@ public class MyAlgoBackTest extends AbstractAlgoBackTest {
         send(createTick());
 
         //ADD asserts when you have implemented your algo logic
-        //assertEquals(container.getState().getChildOrders().size(), 3);
+        assertEquals(container.getState().getChildOrders().size(), 3);
 
         //when: market data moves towards us
         send(createTick2());

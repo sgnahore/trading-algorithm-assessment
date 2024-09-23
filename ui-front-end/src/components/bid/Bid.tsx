@@ -1,34 +1,41 @@
 import React, { useRef } from 'react';
 import './Bid.css'
+
 interface BidProps {
-  bid: string;
+  bid: number;
   bidQuantity: number;
   index: number;
 }
 export const Bid: React.FC<BidProps> = ({ bid, bidQuantity }) => {
-    const previousBidRef = useRef<string | null>(null);  // Store the previous bid
+    const previousBidRef = useRef<number | null>(null);  
     const currentBid = bid;
-    const previousBid = previousBidRef.current;  // Get the previous bid from the ref
+    const previousBid = previousBidRef.current;  
   
     let bidDirection = '';
-    if (previousBid !== null) {
+
       if (currentBid > previousBid) {
-        bidDirection = '↑';  
+        bidDirection = '⬆';  
+
       } else if (currentBid < previousBid) {
-        bidDirection = '↓';  
-      } 
+        bidDirection = '⬇';  
     }
   
-    // Update the ref with the current bid (this will be used in the next render)
     previousBidRef.current = currentBid;
+
+    const dynamicPercentage: number =  (currentBid / 70) * 100;
+    // console.log(currentBid);
+
   
     return (<>
-    <td className='bidQuantity'>
+    
+    <td className='bidQuantity' style={{  background: `linear-gradient(to left, blue ${dynamicPercentage}%, #ffffff ${dynamicPercentage}%`}}>
       {bidQuantity}
     </td>
-      <td className="bid">
-        {bidDirection} {bid}  
-      </td>
+    <td className="bid">
+  <span style={{ color: 'grey' }}>{bidDirection}</span>
+  <span>{bid}</span>
+</td>
+
       </>
     );
   };

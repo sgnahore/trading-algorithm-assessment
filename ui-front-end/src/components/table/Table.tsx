@@ -3,8 +3,8 @@ import { Bid } from "../bid/Bid";
 import { Offer } from "../offer/Offer";
 interface TableColumn {
   bidQuantity: number;
-  bid: string;
-  offer: string;
+  bid: number;
+  offer: number;
   offerQuantity: number;
 }
 
@@ -13,9 +13,6 @@ interface TableProps {
 }
 
 export const Table: React.FC<TableProps> = ({ data }) => {
-  if (data.length === 0) {
-    return <p>No data available</p>;
-  }
 
   return (
     <table>
@@ -28,7 +25,7 @@ export const Table: React.FC<TableProps> = ({ data }) => {
         <tr>
           <th ></th>
           <th >Quantity</th>
-          <th >Price</th>
+          <th className="bidPriceHeading" style={{ textAlign: 'right'}}>Price</th>
           <th >Price</th>
           <th >Quantity</th>
           
