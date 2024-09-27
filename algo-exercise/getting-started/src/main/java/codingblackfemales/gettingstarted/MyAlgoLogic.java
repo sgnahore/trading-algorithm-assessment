@@ -3,15 +3,17 @@ package codingblackfemales.gettingstarted;
 import codingblackfemales.action.Action;
 import codingblackfemales.action.NoAction;
 import codingblackfemales.algo.AlgoLogic;
+import codingblackfemales.action.CreateChildOrder;
+
 import codingblackfemales.sotw.SimpleAlgoState;
 import codingblackfemales.sotw.marketdata.AskLevel;
 import codingblackfemales.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import codingblackfemales.action.CancelChildOrder;
-import codingblackfemales.action.CreateChildOrder;
-import codingblackfemales.sotw.marketdata.BidLevel;
 import messages.order.Side;
+
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class MyAlgoLogic implements AlgoLogic {
@@ -31,39 +33,41 @@ public class MyAlgoLogic implements AlgoLogic {
 
         logger.info("[MYALGO] Algo Sees Book as:\n" + book);
 
-        final AskLevel farTouch = state.getAskAt(0);
+        //EXTRA VARIABLES
+        //getting individual ask level
 
-        //take as much as we can from the far touch....
-        long quantityThreshold = 101;
-//        long quantity = farTouch.quantity;
-//        long price = farTouch.price;
+        //an array to push all price x quantity objects
+        //List<AskLevel> askLevels = new ArrayList<>();
 
-        List<AskLevel> askLevels = state.getAskLevels();
-//        List<int> levels = state.getAskLevels();
-        // Iterate over each ask level
-        for (AskLevel askLevel : askLevels) {
-//            int quantity = askLevel.quantity;
-//            long price = askLevel.price;
+        double vwap = 111.324;
+        double vwapThreshold = 0.01 * vwap;
 
-            logger.info("[MYALGO] all levels: " + askLevel);
 
             // If we have fewer than 3 child orders, we want to add new ones
             if (totalOrderCount < 3) {
-//                if (quantity > quantityThreshold) {
-//                    logger.info("[MYALGO] Quantity " + quantity + " is above threshold, creating child order at " + price + " using given quantity");
-//                    return new CreateChildOrder(Side.BUY, quantity, price);
-//                } else {
-//                    // If the quantity is less than or equal to the threshold, create an order with the threshold quantity
-//                    logger.info("[MYALGO] Quantity is below threshold, creating child order using threshold: " + quantityThreshold + " @ " + price);
-//                    return new CreateChildOrder(Side.BUY, quantityThreshold, price);
-//                }
+
+                //hard quoted quantity, to be made dynamic
+                long quantity = 200;
+
+                for (int i = 0; i < state.getAskLevels(); i++) {
+                    final AskLevel farTouch = state.getAskAt(i);
+                    //askLevels.add(farTouch);
+                    logger.info("[MYALGO] Current level: " + farTouch);
+
+                    long askPrice = state.getAskAt(i).getPrice();
+                    //if price is less that vwap by 1%, buy
+                    if (vwap > askPrice){
+                        logger.info("[MYALGO] Volume-Weighted Av Price is " + vwap);
+                        logger.info("[MYALGO] Current ask price " + askPrice + " is more than 1% below VWAP, creating child order at price " + askPrice + " for quantity " + quantity );
+                        return new CreateChildOrder(Side.BUY, quantity, askPrice);
+                    }
+                }
             } else {
                 logger.info("[MYALGO] Have: " + totalOrderCount + " child orders, no further orders needed.");
+
                 return NoAction.NoAction;
             }
-        }
 
-        // If no action is taken within the loop, return NoAction
         return NoAction.NoAction;
     }
 }
