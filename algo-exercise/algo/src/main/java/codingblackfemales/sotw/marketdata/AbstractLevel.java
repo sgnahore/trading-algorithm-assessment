@@ -1,5 +1,6 @@
 package codingblackfemales.sotw.marketdata;
 
+
 public class AbstractLevel {
     public long price;
     public long quantity;
@@ -19,6 +20,5 @@ public class AbstractLevel {
     public void setQuantity(long quantity) {
         this.quantity = quantity;
     }
-
 
 }
