@@ -33,12 +33,8 @@ public class MyAlgoLogic implements AlgoLogic {
 
         logger.info("[MYALGO] Algo Sees Book as:\n" + book);
 
-        //EXTRA VARIABLES
-        //getting individual ask level
 
-        //an array to push all price x quantity objects
-        //List<AskLevel> askLevels = new ArrayList<>();
-
+        //static vwap logic
         double vwap = 111.324;
         double vwapThreshold = 0.01 * vwap;
 
@@ -46,22 +42,20 @@ public class MyAlgoLogic implements AlgoLogic {
             // If we have fewer than 3 child orders, we want to add new ones
             if (totalOrderCount < 3) {
 
-                //hard quoted quantity, to be made dynamic
-                long quantity = 200;
-
                 for (int i = 0; i < state.getAskLevels(); i++) {
-                    final AskLevel farTouch = state.getAskAt(i);
-                    //askLevels.add(farTouch);
-                    logger.info("[MYALGO] Current level: " + farTouch);
+                    final AskLevel currentLevel = state.getAskAt(i);
 
                     long askPrice = state.getAskAt(i).getPrice();
-                    //if price is less that vwap by 1%, buy
-                    if (vwap > askPrice){
+                    long askQuantity = state.getAskAt(i).getQuantity();
+
+
+
+                    //if price is less that vwap by 1%, create buy order
+                    if (vwap - vwapThreshold >= askPrice){
                         logger.info("[MYALGO] Volume-Weighted Av Price is " + vwap);
-                        logger.info("[MYALGO] Current ask price " + askPrice + " is more than 1% below VWAP, creating child order at price " + askPrice + " for quantity " + quantity );
-                        return new CreateChildOrder(Side.BUY, quantity, askPrice);
-                    }
-                }
+                        logger.info("[MYALGO] Ask price is " + askPrice + ". This is more than 1% below VWAP, a steal! Creating child order at level " + i + " " + currentLevel );
+                        return new CreateChildOrder(Side.BUY, askQuantity, askPrice);
+                    
             } else {
                 logger.info("[MYALGO] Have: " + totalOrderCount + " child orders, no further orders needed.");
 
