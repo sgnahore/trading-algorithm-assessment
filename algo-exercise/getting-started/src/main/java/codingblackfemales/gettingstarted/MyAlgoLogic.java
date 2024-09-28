@@ -48,17 +48,16 @@ public class MyAlgoLogic implements AlgoLogic {
         final BidLevel highestBid = state.getBidAt(0);
         final AskLevel lowestAsk = state.getAskAt(0);
         final long spread = lowestAsk.price - highestBid.price;
-        final long spreadThreshold = 3;
+        final long spreadThreshold = 3000;
 
         //timestamps variables
         Timestamp ts = new Timestamp(System.currentTimeMillis());
         final var activeOrders = state.getActiveChildOrders();
-        final var option = activeOrders.stream().findFirst();
         logger.info("[MYALGO] Current time stamps " + timestamps);
-        
+
 
             // If we have fewer than 3 child orders, we want to add new ones
-            if (totalOrderCount < 3) {
+            if (totalOrderCount < 10) {
                 logger.info("[MYALGO] Have:" + state.getChildOrders().size() + " children, want 3");
 
                 //exit condition
@@ -73,28 +72,32 @@ public class MyAlgoLogic implements AlgoLogic {
                     long askQuantity = state.getAskAt(i).quantity;
                     final AskLevel currentAskLevel = state.getAskAt(i);
 
-
                     if (vwap - vwapThreshold >= askPrice) {
-                        timestamps.add(ts);
 
                         logger.info("[MYALGO] Volume-Weighted Av Price is " + vwap);
 
                         logger.info("[MYALGO] Best " + currentAskLevel + ". This is more than 1% below ask VWAP, a steal! Creating child order at " + ts);
+                        timestamps.add(ts);
                         return new CreateChildOrder(Side.BUY, askQuantity, askPrice) ;
 
                         //if order older than one minute, cancel
-                    } else if (!timestamps.isEmpty()) {
-                        for (int j = 0; j < timestamps.size(); j++) {
+                    } else {
+                        logger.info("[MYALGO] Cannot trade, price too high ");
+                    }
 
-                            var childOrder = option.get();
+                    //if order has been present ON PASSIVE SIDE for longer than 60 milliseconds, cancel the order
+                    if (!timestamps.isEmpty()) {
+                        for (int j = 0; j < timestamps.size(); j++ ){
 
                             long timeDifference = ts.getTime() - timestamps.get(j).getTime();
-                            if (timeDifference > 60_000) {
-                                logger.info("[MYALGO] Cancelling order, timestamp older than 1 minute: " + timestamps.get(j));
-                                return new CancelChildOrder(childOrder) ;
+                            if (timeDifference > 60) {
+                                logger.info("[MYALGO] Cancelling order at level " + j + " order is older than 1 minute: " + timestamps.get(j));
+                                return new CancelChildOrder(activeOrders.get(j)) ;
+
+                        } else {
+                                logger.info("[MYALGO] No order to cancel ");
                             }
-                        }
-                    }
+                    }}
                     }
                 }
             } else {
