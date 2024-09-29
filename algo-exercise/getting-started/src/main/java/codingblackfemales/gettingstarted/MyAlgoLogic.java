@@ -40,8 +40,26 @@ public class MyAlgoLogic implements AlgoLogic {
         logger.info("[MYALGO] Algo Sees Book as:\n" + book);
 
 
-        //static vwap logic
-        double vwap = 111;
+        //vwap logic ASK SIDE
+
+        List<Long> askPrices = new ArrayList<>();
+        List<Long> askQuantities = new ArrayList<>();
+        int askLevels = state.getAskLevels();
+
+
+        long totalPriceByQuantities = 0;
+        long totalQuantities = 0;
+
+        for (int i = 0; i < askLevels ; i++) {
+            long askQuantity = state.getAskAt(i).quantity;
+            long askPrice = state.getAskAt(i).price;
+
+            totalQuantities += askQuantity;
+            totalPriceByQuantities += askQuantity * askPrice;
+        }
+
+
+        double vwap = totalPriceByQuantities / totalQuantities;
         double vwapThreshold = 0.01 * vwap;
 
         //spread variables
@@ -69,9 +87,10 @@ public class MyAlgoLogic implements AlgoLogic {
 
 
                     //check if any askprice is less than vwap threshold
-                    for (int i = 0; i < state.getAskLevels(); i++) {
-                    long askPrice = state.getAskAt(i).price;
+                for (int i = 0; i < askLevels; i++) {
                     long askQuantity = state.getAskAt(i).quantity;
+                    long askPrice = state.getAskAt(i).price;
+
                     final AskLevel currentAskLevel = state.getAskAt(i);
 
                     long bidQuantity = state.getBidAt(i).quantity;
@@ -95,16 +114,17 @@ public class MyAlgoLogic implements AlgoLogic {
                     }
 
                 //if bid price is good, create sell order
-                } for (int i = 0; i < state.getBidLevels(); i++) {
-                    long bidPrice = state.getBidAt(i).price;
-                    long bidQuantity = state.getBidAt(i).quantity;
-
-                    if (bidPrice >= vwap + vwapThreshold) {
-                        logger.info("[MYALGO] VWAP Sell Condition Met. Creating child sell order.");
-                        timestamps.add(ts);
-                        return new CreateChildOrder(Side.SELL, bidQuantity, bidPrice);
-                    }
                 }
+//            for (int i = 0; i < state.getBidLevels(); i++) {
+//                    long bidPrice = state.getBidAt(i).price;
+//                    long bidQuantity = state.getBidAt(i).quantity;
+//
+//                    if (bidPrice >= vwap + vwapThreshold) {
+//                        logger.info("[MYALGO] VWAP Sell Condition Met. Creating child sell order.");
+//                        timestamps.add(ts);
+//                        return new CreateChildOrder(Side.SELL, bidQuantity, bidPrice);
+//                    }
+//                }
 
                 //if order has been present ON PASSIVE SIDE for longer than 6 milliseconds, cancel the order
                  if (!timestamps.isEmpty()) {
