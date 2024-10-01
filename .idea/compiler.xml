@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
-    <excludeFromCompile>
-      <file url="file://$PROJECT_DIR$/algo-exercise/algo/src/main/java/codingblackfemales/algo/PassiveAlgoLogic.java" />
-      <file url="file://$PROJECT_DIR$/algo-exercise/algo/src/main/java/codingblackfemales/algo/AddCancelAlgoLogic.java" />
-      <file url="file://$PROJECT_DIR$/algo-exercise/algo/src/test/java/codingblackfemales/algo/PassiveAlgoTest.java" />
-      <file url="file://$PROJECT_DIR$/algo-exercise/backtest/src/test/java/codingblackfemales/backtest/AddCancelAlgoBackTest.java" />
-      <file url="file://$PROJECT_DIR$/algo-exercise/backtest/src/test/java/codingblackfemales/backtest/PassiveAlgoBackTest.java" />
-    </excludeFromCompile>
     <annotationProcessing>
       <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />

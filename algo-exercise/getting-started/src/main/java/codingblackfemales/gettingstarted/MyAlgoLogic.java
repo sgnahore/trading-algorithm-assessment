@@ -78,7 +78,7 @@ public class MyAlgoLogic implements AlgoLogic {
 
 
         double bidVWAP = totalBidPriceByQuantities / totalBidQuantities;
-//        double vwapThreshold = 0.01 * askVWAP;
+        double askVWAPThreshold = askVWAP - (0.01 * askVWAP);
 
         //spread variables
         final BidLevel highestBid = state.getBidAt(0);
@@ -118,18 +118,27 @@ public class MyAlgoLogic implements AlgoLogic {
                 long bidPrice = state.getBidAt(0).price;
                 final BidLevel currentBidLevel = state.getBidAt(0);
 
-                //create a buy order if ask price is good
-                if (askVWAP >= askPrice) {
 
-                    logger.info("[MYALGO] Volume-Weighted Av Price is " + askVWAP);
+            //create a buy order if ask price is good
+                if (askVWAP >= askPrice && askVWAPThreshold > askPrice ) {
 
-                    timestamps.add(ts);
+                    logger.info("[MYALGO] Price is rare. Volume-Weighted Av Price is " + askVWAP + "and current price is: " + askPrice);
+                long rarePriceQuantity = askQuantity / 3;
+//                    timestamps.add(ts);
+
+                    logger.info("[MYALGO]Creating child order at " + ts + "ORDER " + rarePriceQuantity + askPrice);
+                    return new CreateChildOrder(Side.BUY, rarePriceQuantity, askPrice) ;
+
+                }else if (askVWAP >= askPrice){
+                logger.info("[MYALGO] AAAVolume-Weighted Av Price is " + askVWAP + "threshold: " + askVWAPThreshold + "price: " + askPrice);
+
+                long goodPriceQuantity = askQuantity / 5;
+
+                logger.info("[MYALGO]Creating child order at " + ts + " ORDER: " + goodPriceQuantity + "@" + askPrice);
+                return new CreateChildOrder(Side.BUY, goodPriceQuantity, askPrice) ;
 
 
-                    logger.info("[MYALGO]Creating child order at " + ts + "order ID: ");
-                    return new CreateChildOrder(Side.BUY, askQuantity, askPrice) ;
-
-                } else {
+            } else {
                     logger.info("[MYALGO] Cannot trade, price too high ");
                 }
 
