@@ -40,45 +40,12 @@ public class MyAlgoLogic implements AlgoLogic {
 
         logger.info("[MYALGO] Algo Sees Book as:\n" + book);
 
+//        VWAP IMPLEMENTATION
+        double askVWAP = getAskVWAP(state);
+        double bidVWAP = getBidVWAP(state);
 
-        //askVWAP logic
-        List<Long> askPrices = new ArrayList<>();
-        List<Long> askQuantities = new ArrayList<>();
-        int askLevels = state.getAskLevels();
-
-
-        long totalAskPriceByQuantities = 0;
-        long totalAskQuantities = 0;
-
-        for (int i = 0; i < askLevels ; i++) {
-            long askQuantity = state.getAskAt(i).quantity;
-            long askPrice = state.getAskAt(i).price;
-
-            totalAskQuantities += askQuantity;
-            totalAskPriceByQuantities += askQuantity * askPrice;
-        }
-        double askVWAP = totalAskPriceByQuantities / totalAskQuantities;
-
-        //bidVWAP logic
-        List<Long> bidPrices = new ArrayList<>();
-        List<Long> bidQuantities = new ArrayList<>();
-        int bidLevels = state.getBidLevels();
-
-
-        long totalBidPriceByQuantities = 0;
-        long totalBidQuantities = 0;
-
-        for (int i = 0; i < bidLevels ; i++) {
-            long bidQuantity = state.getBidAt(i).quantity;
-            long bidPrice = state.getBidAt(i).price;
-
-            totalBidQuantities += bidQuantity;
-            totalBidPriceByQuantities += bidQuantity * bidPrice;
-        }
-
-
-        double bidVWAP = totalBidPriceByQuantities / totalBidQuantities;
         double askVWAPThreshold = askVWAP - (0.01 * askVWAP);
+        double bidVWAPThreshold = bidVWAP - (0.01 * bidVWAP);
 
         //spread variables
         final BidLevel highestBid = state.getBidAt(0);
@@ -90,11 +57,9 @@ public class MyAlgoLogic implements AlgoLogic {
         Timestamp ts = new Timestamp(System.currentTimeMillis());
         final var activeOrders = state.getActiveChildOrders();
         final var allOrders = state.getChildOrders();
-        logger.info("[MYALGO] Current time stamps " + timestamps);
 
-
-        final var option = activeOrders.stream().findFirst();
-        final var potential = allOrders.stream().findFirst();
+        //      to add a time stamp, used for sell side
+//      final var option = activeOrders.stream().findFirst();
 
         //exit condition
         if (spread > spreadThreshold) {
@@ -108,7 +73,6 @@ public class MyAlgoLogic implements AlgoLogic {
 
 
             //check if any askprice is less than askVWAP threshold
-                //loop not required, ask price should be at level 0 - further set dynamic quantity
                 long askQuantity = state.getAskAt(0).quantity;
                 long askPrice = state.getAskAt(0).price;
 
@@ -119,26 +83,23 @@ public class MyAlgoLogic implements AlgoLogic {
                 final BidLevel currentBidLevel = state.getBidAt(0);
 
 
-            //create a buy order if ask price is good
-                if (askVWAP >= askPrice && askVWAPThreshold > askPrice ) {
+                //create a buy order with larger quantity if ask price is rare (less than vwap threshold)
+                if (askVWAPThreshold > askPrice ) {
+                    logger.info("[MYALGO] Price is rare. Volume-Weighted Av Price is " + askVWAP + " and current price is: " + askPrice);
+                    long rarePriceQuantity = askQuantity / 3;
 
-                    logger.info("[MYALGO] Price is rare. Volume-Weighted Av Price is " + askVWAP + "and current price is: " + askPrice);
-                long rarePriceQuantity = askQuantity / 3;
-//                    timestamps.add(ts);
-
-                    logger.info("[MYALGO]Creating child order at " + ts + "ORDER " + rarePriceQuantity + askPrice);
+                    logger.info("[MYALGO]ORDER: " + rarePriceQuantity + "@" + askPrice + "created at: " + ts );
                     return new CreateChildOrder(Side.BUY, rarePriceQuantity, askPrice) ;
 
-                }else if (askVWAP >= askPrice){
-                logger.info("[MYALGO] AAAVolume-Weighted Av Price is " + askVWAP + "threshold: " + askVWAPThreshold + "price: " + askPrice);
+                    //create a buy order with normal quantity if ask price is good (between vwap and vwap threshold)
+                } else if (askVWAP >= askPrice){
+                    logger.info("[MYALGO] Volume-Weighted Av Price is " + askVWAP + "threshold: " + askVWAPThreshold + "price: " + askPrice);
 
-                long goodPriceQuantity = askQuantity / 5;
+                    long goodPriceQuantity = askQuantity / 5;
 
-                logger.info("[MYALGO]Creating child order at " + ts + " ORDER: " + goodPriceQuantity + "@" + askPrice);
-                return new CreateChildOrder(Side.BUY, goodPriceQuantity, askPrice) ;
-
-
-            } else {
+                    logger.info("[MYALGO]ORDER: " + goodPriceQuantity + "@" + askPrice + "created at: " + ts );
+                    return new CreateChildOrder(Side.BUY, goodPriceQuantity, askPrice) ;
+                } else {
                     logger.info("[MYALGO] Cannot trade, price too high ");
                 }
 
@@ -146,18 +107,18 @@ public class MyAlgoLogic implements AlgoLogic {
         }
         //check if any bidprice is more than askVWAP threshold - TO BE FINALISED
 
-//                    long bidPrice = state.getBidAt(0).price;
-//                    long bidQuantity = state.getBidAt(0).quantity;
-//
-//                    //DO I NEED TO SET A CONDITION FOR SPREAD HERE?
-//                    if (bidPrice >= bidVWAP && state.getBidLevels() > 0) {
-//                        logger.info("[MYALGO] VWAP Sell Condition Met. Creating child sell order.");
-//                        timestamps.add(ts);
-//                        return new CreateChildOrder(Side.SELL, bidQuantity, bidPrice);
-//                    } else {
-//                        logger.info("[MYALGO] VWAP Sell Condition not Met. ");
-//
-//                }
+                    long bidPrice = state.getBidAt(0).price;
+                    long bidQuantity = state.getBidAt(0).quantity;
+
+                    //DO I NEED TO SET A CONDITION FOR SPREAD HERE?
+                    if (bidPrice >= bidVWAP && state.getBidLevels() > 0) {
+                        logger.info("[MYALGO] VWAP Sell Condition Met. Creating child sell order.");
+                        timestamps.add(ts);
+                        return new CreateChildOrder(Side.SELL, bidQuantity, bidPrice);
+                    } else {
+                        logger.info("[MYALGO] VWAP Sell Condition not Met. ");
+
+                }
 
 //        if order has been present ON PASSIVE SIDE for longer than 6 milliseconds, cancel the order
         if (!timestamps.isEmpty()) {
@@ -182,5 +143,48 @@ public class MyAlgoLogic implements AlgoLogic {
         logger.info("[MYALGO] ORDER COMPLETE");
 
         return NoAction.NoAction;
+    }
+
+    private static double getAskVWAP(SimpleAlgoState state) {
+        //askVWAP logic
+        List<Long> askPrices = new ArrayList<>();
+        List<Long> askQuantities = new ArrayList<>();
+        int askLevels = state.getAskLevels();
+
+
+        long totalAskPriceByQuantities = 0;
+        long totalAskQuantities = 0;
+
+        for (int i = 0; i < askLevels ; i++) {
+            long askQuantity = state.getAskAt(i).quantity;
+            long askPrice = state.getAskAt(i).price;
+
+            totalAskQuantities += askQuantity;
+            totalAskPriceByQuantities += askQuantity * askPrice;
+        }
+        double askVWAP = totalAskPriceByQuantities / totalAskQuantities;
+        return askVWAP;
+    }
+private static double getBidVWAP(SimpleAlgoState state) {
+    //bidVWAP logic
+    List<Long> bidPrices = new ArrayList<>();
+    List<Long> bidQuantities = new ArrayList<>();
+    int bidLevels = state.getBidLevels();
+
+
+    long totalBidPriceByQuantities = 0;
+    long totalBidQuantities = 0;
+
+    for (int i = 0; i < bidLevels ; i++) {
+        long bidQuantity = state.getBidAt(i).quantity;
+        long bidPrice = state.getBidAt(i).price;
+
+        totalBidQuantities += bidQuantity;
+        totalBidPriceByQuantities += bidQuantity * bidPrice;
+    }
+
+
+    double bidVWAP = totalBidPriceByQuantities / totalBidQuantities;
+    return bidVWAP;
     }
 }
