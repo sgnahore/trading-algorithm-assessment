@@ -6,6 +6,7 @@ import codingblackfemales.action.NoAction;
 import codingblackfemales.algo.AlgoLogic;
 import codingblackfemales.action.CreateChildOrder;
 
+import codingblackfemales.sotw.ChildOrder;
 import codingblackfemales.sotw.SimpleAlgoState;
 import codingblackfemales.sotw.marketdata.AskLevel;
 import codingblackfemales.sotw.marketdata.BidLevel;
@@ -40,40 +41,60 @@ public class MyAlgoLogic implements AlgoLogic {
         logger.info("[MYALGO] Algo Sees Book as:\n" + book);
 
 
-        //vwap logic ASK SIDE
-
+        //askVWAP logic
         List<Long> askPrices = new ArrayList<>();
         List<Long> askQuantities = new ArrayList<>();
         int askLevels = state.getAskLevels();
 
 
-        long totalPriceByQuantities = 0;
-        long totalQuantities = 0;
+        long totalAskPriceByQuantities = 0;
+        long totalAskQuantities = 0;
 
         for (int i = 0; i < askLevels ; i++) {
             long askQuantity = state.getAskAt(i).quantity;
             long askPrice = state.getAskAt(i).price;
 
-            totalQuantities += askQuantity;
-            totalPriceByQuantities += askQuantity * askPrice;
+            totalAskQuantities += askQuantity;
+            totalAskPriceByQuantities += askQuantity * askPrice;
+        }
+        double askVWAP = totalAskPriceByQuantities / totalAskQuantities;
+
+        //bidVWAP logic
+        List<Long> bidPrices = new ArrayList<>();
+        List<Long> bidQuantities = new ArrayList<>();
+        int bidLevels = state.getBidLevels();
+
+
+        long totalBidPriceByQuantities = 0;
+        long totalBidQuantities = 0;
+
+        for (int i = 0; i < bidLevels ; i++) {
+            long bidQuantity = state.getBidAt(i).quantity;
+            long bidPrice = state.getBidAt(i).price;
+
+            totalBidQuantities += bidQuantity;
+            totalBidPriceByQuantities += bidQuantity * bidPrice;
         }
 
 
-        double vwap = totalPriceByQuantities / totalQuantities;
-        double vwapThreshold = 0.01 * vwap;
+        double bidVWAP = totalBidPriceByQuantities / totalBidQuantities;
+//        double vwapThreshold = 0.01 * askVWAP;
 
         //spread variables
         final BidLevel highestBid = state.getBidAt(0);
         final AskLevel lowestAsk = state.getAskAt(0);
         final long spread = lowestAsk.price - highestBid.price;
-        final long spreadThreshold = 5;
+        final long spreadThreshold = 3;
 
         //timestamps variables
         Timestamp ts = new Timestamp(System.currentTimeMillis());
         final var activeOrders = state.getActiveChildOrders();
+        final var allOrders = state.getChildOrders();
         logger.info("[MYALGO] Current time stamps " + timestamps);
 
+
         final var option = activeOrders.stream().findFirst();
+        final var potential = allOrders.stream().findFirst();
 
         //exit condition
         if (spread > spreadThreshold) {
@@ -81,70 +102,74 @@ public class MyAlgoLogic implements AlgoLogic {
             return NoAction.NoAction;
         }
 
-            // If we have fewer than 4 child orders, we want to add new ones
-            if (totalOrderCount < 10 && option.isEmpty()) {
-                logger.info("[MYALGO] Have:" + state.getChildOrders().size() + " children, want 3" );
+        // If we have fewer than 2 child orders, we want to add new ones
+        if (totalOrderCount < 2 ) {
+            logger.info("[MYALGO] Have:" + state.getChildOrders().size() + " children, want 3" );
 
 
-                    //check if any askprice is less than vwap threshold
-                for (int i = 0; i < askLevels; i++) {
-                    long askQuantity = state.getAskAt(i).quantity;
-                    long askPrice = state.getAskAt(i).price;
+            //check if any askprice is less than askVWAP threshold
+                //loop not required, ask price should be at level 0 - further set dynamic quantity
+                long askQuantity = state.getAskAt(0).quantity;
+                long askPrice = state.getAskAt(0).price;
 
-                    final AskLevel currentAskLevel = state.getAskAt(i);
+                final AskLevel currentAskLevel = state.getAskAt(0);
 
-                    long bidQuantity = state.getBidAt(i).quantity;
-                    long bidPrice = state.getBidAt(i).price;
-                    final BidLevel currentBidLevel = state.getBidAt(i);
+                long bidQuantity = state.getBidAt(0).quantity;
+                long bidPrice = state.getBidAt(0).price;
+                final BidLevel currentBidLevel = state.getBidAt(0);
 
                 //create a buy order if ask price is good
-                    if (vwap - vwapThreshold >= askPrice) {
+                if (askVWAP >= askPrice) {
 
-                        logger.info("[MYALGO] Volume-Weighted Av Price is " + vwap);
+                    logger.info("[MYALGO] Volume-Weighted Av Price is " + askVWAP);
 
-                        logger.info("[MYALGO] Best " + currentAskLevel + ". This is more than 1% below ask VWAP, a steal! Creating child order at " + ts);
-                        timestamps.add(ts);
-                        return new CreateChildOrder(Side.BUY, askQuantity, askPrice) ;
-
-                    } else {
-                        logger.info("[MYALGO] Cannot trade, price too high ");
-                    }
+                    timestamps.add(ts);
 
 
-                    }
+                    logger.info("[MYALGO]Creating child order at " + ts + "order ID: ");
+                    return new CreateChildOrder(Side.BUY, askQuantity, askPrice) ;
 
-                //if bid price is good, create sell order
+                } else {
+                    logger.info("[MYALGO] Cannot trade, price too high ");
                 }
-//            for (int i = 0; i < state.getBidLevels(); i++) {
-//                    long bidPrice = state.getBidAt(i).price;
-//                    long bidQuantity = state.getBidAt(i).quantity;
+
+
+        }
+        //check if any bidprice is more than askVWAP threshold - TO BE FINALISED
+
+//                    long bidPrice = state.getBidAt(0).price;
+//                    long bidQuantity = state.getBidAt(0).quantity;
 //
-//                    if (bidPrice >= vwap + vwapThreshold) {
+//                    //DO I NEED TO SET A CONDITION FOR SPREAD HERE?
+//                    if (bidPrice >= bidVWAP && state.getBidLevels() > 0) {
 //                        logger.info("[MYALGO] VWAP Sell Condition Met. Creating child sell order.");
 //                        timestamps.add(ts);
 //                        return new CreateChildOrder(Side.SELL, bidQuantity, bidPrice);
-//                    }
+//                    } else {
+//                        logger.info("[MYALGO] VWAP Sell Condition not Met. ");
+//
 //                }
 
-                //if order has been present ON PASSIVE SIDE for longer than 6 milliseconds, cancel the order
-                 if (!timestamps.isEmpty()) {
-                    for (int j = 0; j < timestamps.size(); j++ ){
+//        if order has been present ON PASSIVE SIDE for longer than 6 milliseconds, cancel the order
+        if (!timestamps.isEmpty()) {
+            for (int j = 0; j < timestamps.size(); j++ ){
 
-                        long timeDifference = ts.getTime() - timestamps.get(j).getTime();
-                        if (timeDifference > 600) {
-                            logger.info("[MYALGO] Cancelling order at level " + j + " order is older than 1 minute: " + timestamps.get(j));
-                            return new CancelChildOrder(activeOrders.get(j)) ;
+                long timeDifference = ts.getTime() - timestamps.get(j).getTime();
+                if (timeDifference > 600) {
+                    logger.info("[MYALGO] Cancelling order at level " + j + " order is older than 1 minute: " + timestamps.get(j));
+                    return new CancelChildOrder(activeOrders.get(j)) ;
 
-                        } else {
-                            logger.info("[MYALGO] No order to cancel ");
+                } else {
+                    logger.info("[MYALGO] No order to cancel ");
 
-                    }
                 }
-            } else {
-                logger.info("[MYALGO] Have: " + totalOrderCount + " child orders, no further orders needed.");
-
-                return NoAction.NoAction;
             }
+        }
+//        else {
+//            logger.info("[MYALGO] Have: " + totalOrderCount + " child orders, no further orders needed.");
+//
+//            return NoAction.NoAction;
+//        }
         logger.info("[MYALGO] ORDER COMPLETE");
 
         return NoAction.NoAction;

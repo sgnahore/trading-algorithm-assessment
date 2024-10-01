@@ -31,7 +31,7 @@ public class MyAlgoBackTest extends AbstractAlgoBackTest {
         //create a sample market data tick....
         send(createTick());
         //simple assert to check we had 1 order created
-        assertEquals(container.getState().getChildOrders().size(), 1);
+        assertEquals(container.getState().getChildOrders().size(), 2);
 
         //when: market data moves towards us
         send(createTick2());
