@@ -64,7 +64,7 @@ public class MyAlgoLogic implements AlgoLogic {
         final var activeOrders = state.getActiveChildOrders();
         final var allOrders = state.getChildOrders();
 
-
+        long profit = 0;
         //exit condition
         if (spread > spreadThreshold) {
             logger.info("[MYALGO] Exiting market, spread is too wide to trade! Current spread: " + spread);
@@ -92,7 +92,7 @@ public class MyAlgoLogic implements AlgoLogic {
             }
         }
 
-        // If we have fewer than 2 child orders, we want to add new ones
+        // If we have fewer than 3 child orders, we want to add new ones
         if (totalOrderCount < 3 ) {
             logger.info("[MYALGO] Have:" + state.getChildOrders().size() + " children, want 3" );
 
@@ -104,34 +104,40 @@ public class MyAlgoLogic implements AlgoLogic {
                 long askPrice = state.getAskAt(0).price;
 
                 final AskLevel currentAskLevel = state.getAskAt(0);
-
 //              create a buy order with larger quantity if ask price is rare (less than vwap threshold)
             if (askVWAPThreshold > askPrice) {
                 logger.info("[MYALGO] Price is rare. VWAP: " + askVWAP + ", current price: " + askPrice);
+                logger.info("[MYALGO] ask price is " + getPercentage(askPrice, askVWAP) + "% below VWAP ");
+
                 long rarePriceQuantity = askQuantity / 3;
                 logger.info("[MYALGO] Creating BUY order: " + rarePriceQuantity + "@" + askPrice);
 
                 if (bidPrice >= bidVWAPThreshold) {
-                    logger.info("[MYALGO] VWAP Sell Condition Met. VWAP: " + bidVWAP + ", bid price: " + bidPrice);
+//                    logger.info("[MYALGO] VWAP Sell Condition Met. VWAP: " + bidVWAP + ", bid price: " + bidPrice);
+                //extract vwap percentage change
+                    logger.info("[MYALGO] Bid price is high! Current price: " + bidPrice + " selling for: " + getPercentage(bidPrice, bidVWAP)+ "% above VWAP");
                     timestamps.add(ts);
 
                     return new CreateChildOrder(Side.SELL, rarePriceQuantity, bidPrice);
                 } else if (bidPrice >= bidVWAP) {
                     logger.info("[MYALGO] VWAP Sell Condition Met. Creating child sell order.");
-                    logger.info("[MYALGO] Volume-Weighted Av Price is " + bidVWAP + "price: " + bidPrice);
+                    logger.info("[MYALGO] Current price: " + bidPrice + " selling for: " + getPercentage(bidPrice, bidVWAP) + "% above VWAP");
 
                     timestamps.add(ts);
+
                     return new CreateChildOrder(Side.SELL, rarePriceQuantity, bidPrice);
                 } else {
                     logger.info("[MYALGO] VWAP Sell Condition not Met. ");
 
                 }
+
                 return new CreateChildOrder(Side.BUY, rarePriceQuantity, askPrice);
 
 
                 //create a buy order with normal quantity if ask price is good (between vwap and vwap threshold)
                 }else if (askVWAP >= askPrice){
                     logger.info("[MYALGO] Volume-Weighted Av Price is " + askVWAP + "threshold: " + askVWAPThreshold + "price: " + askPrice);
+                    logger.info("[MYALGO] ask price is " + getPercentage(askPrice, askVWAP) + "% below VWAP ");
 
                     long goodPriceQuantity = askQuantity / 5;
 
@@ -148,9 +154,14 @@ public class MyAlgoLogic implements AlgoLogic {
          }
 
         logger.info("[MYALGO] Have: " + totalOrderCount + " child orders, no further orders needed. All orders: " + allOrders);
+        logger.info("[MYALGO] PROFIT = " + profit);
         logger.info("[MYALGO] ORDER COMPLETE");
 
         return NoAction.NoAction;
+    }
+
+    private static long getPercentage(long price, double vwap) {
+        return Math.round((price - vwap) / vwap * 100);
     }
 
     private static double getAskVWAP(SimpleAlgoState state) {
