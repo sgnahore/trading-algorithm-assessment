@@ -150,6 +150,41 @@ public abstract class AbstractAlgoBackTest extends SequencerTestCase {
 
         return directBuffer;
     }
+    protected UnsafeBuffer testTick(){
 
+        final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+        final BookUpdateEncoder encoder = new BookUpdateEncoder();
+
+        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024);
+        final UnsafeBuffer directBuffer = new UnsafeBuffer(byteBuffer);
+
+        //write the encoded output to the direct buffer
+        encoder.wrapAndApplyHeader(directBuffer, 0, headerEncoder);
+
+        //set the fields to desired values
+        encoder.venue(Venue.XLON);
+        encoder.instrumentId(123L);
+
+        encoder.bidBookCount(4)
+                .next().price(100L).size(500L)
+                .next().price(101L).size(1000L)
+                .next().price(102L).size(100L)
+                .next().price(103L).size(100L);
+
+        encoder.askBookCount(8)
+                .next().price(140L).size(800L)    // A large-sized order at a lower price
+                .next().price(139L).size(300L)    // A big drop in price with lower volume
+                .next().price(138L).size(300L)    // A big drop in price with lower volume
+                .next().price(136L).size(300L)    // A big drop in price with lower volume
+                .next().price(134L).size(300L)    // A big drop in price with lower volume
+                .next().price(130L).size(300L)    // A big drop in price with lower volume
+                .next().price(128L).size(1500L)
+                .next().price(170L).size(5600L);
+
+        encoder.instrumentStatus(InstrumentStatus.CONTINUOUS);
+        encoder.source(Source.STREAM);
+
+        return directBuffer;
+    }
 
 }

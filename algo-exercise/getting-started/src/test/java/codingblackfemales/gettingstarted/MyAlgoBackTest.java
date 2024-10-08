@@ -29,24 +29,25 @@ public class MyAlgoBackTest extends AbstractAlgoBackTest {
     @Test
     public void testExampleBackTest() throws Exception {
         //create a sample market data tick....
-        send(createTick());
-//        //simple assert to check we had 1 order created
-//        assertEquals(2, container.getState().getChildOrders().size());
+//        send(createTick());
+////        //simple assert to check we had 1 order created
+//        assertEquals(3, container.getState().getChildOrders().size());
 
         //when: market data moves towards us
 //        send(createTick2());
-
-//        //then: get the state
+//
+//////        //then: get the state
 //        var state = container.getState();
 //        long filledQuantity = state.getChildOrders().stream().map(ChildOrder::getFilledQuantity).reduce(Long::sum).get();
-//
-//        //and: check that our algo state was updated to reflect our fills when the market data
-//        assertEquals(300, filledQuantity);
+////
+////        //and: check that our algo state was updated to reflect our fills when the market data
+//        assertEquals(434, filledQuantity);
 
-//        send(createWideSpreadTick());
-//
-//        //simple assert to check we had 3 orders created
-//        assertEquals(container.getState().getChildOrders().size(), 0);
+//        send(createTightSpreadTick());
+        //simple assert to check we had 3 orders created
+//        assertEquals(3, container.getState().getChildOrders().size());
+        send(testTick());
+
 
     }
 

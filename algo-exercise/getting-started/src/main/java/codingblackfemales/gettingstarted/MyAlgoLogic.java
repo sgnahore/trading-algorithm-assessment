@@ -15,195 +15,157 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import messages.order.Side;
 
-
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
-
 public class MyAlgoLogic implements AlgoLogic {
 
     private static final Logger logger = LoggerFactory.getLogger(MyAlgoLogic.class);
-
-    List<Timestamp> timestamps = new ArrayList<>();
-
+    private long amountOfSharesOwned = 0; // Setting initial sharesOwned to 500
+    private long profit = 0; // to track profit/loss based on trades
+    private long totalSpendings = 0; // to track profit/loss based on trades
+    private long totalEarnings = 0; // to track profit/loss based on trades
 
     @Override
     public Action evaluate(SimpleAlgoState state) {
 
-        var orderBookAsString = Util.orderBookToString(state);
+        logger.info("[MYALGO] Current order book:\n" + Util.orderBookToString(state));
 
-        logger.info("[MYALGO] The current state of the order book is:\n" + orderBookAsString);
-        var totalOrderCount = state.getChildOrders().size();
-        logger.info("[MYALGO] In Algo Logic....");
-
-        final String book = Util.orderBookToString(state);
-
-        logger.info("[MYALGO] Algo Sees Book as:\n" + book);
-
-//      VWAP IMPLEMENTATION
-        double askVWAP = getAskVWAP(state);
-        double bidVWAP = getBidVWAP(state);
-
-        double askVWAPThreshold = askVWAP - (0.01 * askVWAP);
-        double bidVWAPThreshold = bidVWAP + (0.01 * bidVWAP);
-
-        //spread = lowest ask - highest bid
-        final long spread = state.getAskAt(0).price - state.getBidAt(0).price;
-
-
-        final long spreadThreshold = 3;
-
-        //bid variables
-        long bidQuantity = state.getBidAt(0).quantity;
-        long bidPrice = state.getBidAt(0).price;
-        final BidLevel currentBidLevel = state.getBidAt(0);
-
-
-        //timestamps variables
-        Timestamp ts = new Timestamp(System.currentTimeMillis());
+        //-------------------------------- DEFINING VARIABLES --------------------------
+        // Count of existing child orders
         final var activeOrders = state.getActiveChildOrders();
-        final var allOrders = state.getChildOrders();
+        int totalOrderCount = state.getChildOrders().size();
 
-        long profit = 0;
-        //exit condition
-        if (spread > spreadThreshold) {
-            logger.info("[MYALGO] Exiting market, spread is too wide to trade! Current spread: " + spread);
-            logger.info("[MYALGO] Have: " + totalOrderCount + " orders");
+        // Get the best (lowest) ask price and quantity
+        AskLevel bestAsk = state.getAskAt(0);
+        long askPrice = bestAsk.price;
+        long askQuantity = bestAsk.quantity;
+
+        // Get the best (highest) bid price
+        BidLevel bestBid = state.getBidAt(0);
+        long bestBidPrice = bestBid.price;
+
+        // Calculate the average market price (VWAP) for asks
+        double askVWAP = calculateVWAP(state, true);
+        double bidVWAP = calculateVWAP(state, false);
+        double askVWAPThreshold = askVWAP - (0.01 * askVWAP);    //define dynamic threshold for ask prices
+
+        // CONSTANT
+        final int MAX_BUY_ORDERS = 2;
+
+        //define dynamic spread between best prices and a threshold
+        long currentSpread = bestAsk.price - bestBid.price;
+        long spreadThreshold = 400;
+
+        //--------------------------------------------------------------------------------
+
+
+        //-------------------------------- EXIT LOGIC ------------------------------------
+
+        // Check if the spread is too wide to trade, if so exit market
+        if (currentSpread > spreadThreshold) {
+            logger.info("[MYALGO] Spread too wide, not trading. Spread: " + currentSpread);
+            logger.info("[MYALGO] PROFIT: " + profit + " --- TOTAL EARNED: " + totalEarnings + " --- TOTAL SPENT: " + totalSpendings + " --- TOTAL ORDERS: " + totalOrderCount);
 
             return NoAction.NoAction;
         }
+        //--------------------------------------------------------------------------------
 
-//        if order has been present ON PASSIVE SIDE for longer than 6 milliseconds, cancel the order
-//        cancel logic
-        if (totalOrderCount > 0 && !timestamps.isEmpty()) {
-            for (int j = 0; j < timestamps.size(); j++ ){
+        //-------------------------------- SELL LOGIC ------------------------------------
+        //If we already have 2 buy orders and the price is equal to or more than bidVWAP, attempt to sell
+        if (totalOrderCount == MAX_BUY_ORDERS && !activeOrders.isEmpty() ) {
 
-                long timeDifference = ts.getTime() - timestamps.get(j).getTime();
-                if (timeDifference > 60) {
-                    logger.info("[MYALGO] Current timestamps " + timestamps);
-                    logger.info("[MYALGO] Cancelling order at level " + j + " order is older than 1 minute: " + timestamps.get(j));
-                    timestamps.remove(j);
-                    return new CancelChildOrder(activeOrders.get(j)) ;
 
-                } else {
-                    logger.info("[MYALGO] No order to cancel ");
+            if (totalOrderCount <= MAX_BUY_ORDERS && bestBidPrice >= bidVWAP) {
+                logger.info("[MYALGO] Total Orders: " + totalOrderCount);
+                logger.info("[MYALGO] ACTIVE Orders: " + activeOrders);
 
-                }
+                final var firstOrder = activeOrders.stream().findFirst(); //find the first order in the list
+
+                var childOrder = firstOrder.get();
+                long oldestOrderPrice = childOrder.getPrice();
+
+                logger.info("[MYALGO] Attempting to sell since we have " + totalOrderCount + " buy orders.");
+
+                long firstBuyOrderQuantity = childOrder.getQuantity();
+
+                amountOfSharesOwned -= firstBuyOrderQuantity;
+                totalEarnings += bestBidPrice * firstBuyOrderQuantity;
+                profit = totalEarnings - totalSpendings;
+
+                logger.info("[MYALGO] Creating a SELL order: " + firstBuyOrderQuantity + "@" + bestBidPrice);
+                logger.info("[MYALGO] PROFIT: " + profit + " --- TOTAL EARNED: " + totalEarnings + " --- TOTAL SPENT: " + totalSpendings + " --- TOTAL ORDERS: " + totalOrderCount);
+
+                return new CreateChildOrder(Side.SELL, firstBuyOrderQuantity, bestBidPrice);
             }
+
+//            final var firstActiveOrder = activeOrders.stream().findFirst();
+//            if (firstActiveOrder.isPresent()) {
+//                ChildOrder orderToCancel = firstActiveOrder.get();
+//                logger.info("[MYALGO] Cancelling order: " + orderToCancel);
+//                profit = totalEarnings - totalSpendings;
+//                logger.info("[MYALGO] PROFIT: " + profit + " --- TOTAL EARNED: " + totalEarnings + " --- TOTAL SPENT: " + totalSpendings);
+//
+//                return new CancelChildOrder(orderToCancel);
+//            }
         }
 
-        // If we have fewer than 3 child orders, we want to add new ones
-        if (totalOrderCount < 3 ) {
-            logger.info("[MYALGO] Have:" + state.getChildOrders().size() + " children, want 3" );
+        //--------------------------------------------------------------------------------
 
-            final var option = activeOrders.stream().findFirst();
+        //-------------------------------- BUY LOGIC -------------------------------------
+
+        // Check if we can create new buy orders
+        if (totalOrderCount < MAX_BUY_ORDERS) {
+            logger .info("[MYALGO] Total Orders: " + totalOrderCount);
+            logger.info("[MYALGO] ACTIVE Orders: " + activeOrders);
 
 
-            //check if any askprice is less than askVWAP threshold
-                long askQuantity = state.getAskAt(0).quantity;
-                long askPrice = state.getAskAt(0).price;
-
-                final AskLevel currentAskLevel = state.getAskAt(0);
-//              create a buy order with larger quantity if ask price is rare (less than vwap threshold)
-            if (askVWAPThreshold > askPrice) {
-                logger.info("[MYALGO] Price is rare. VWAP: " + askVWAP + ", current price: " + askPrice);
-                logger.info("[MYALGO] ask price is " + getPercentage(askPrice, askVWAP) + "% below VWAP ");
-
+            // Check if the ask price is lower than the VWAP threshold
+            if (askVWAPThreshold > askPrice ) {
                 long rarePriceQuantity = askQuantity / 3;
+                logger.info("[MYALGO] Price is rare. VWAP: " + askVWAP + ", current price: " + askPrice);
+
+                amountOfSharesOwned += rarePriceQuantity;
+                totalSpendings += askPrice * rarePriceQuantity;
+
                 logger.info("[MYALGO] Creating BUY order: " + rarePriceQuantity + "@" + askPrice);
+                profit = totalEarnings - totalSpendings;
 
-                if (bidPrice >= bidVWAPThreshold) {
-//                    logger.info("[MYALGO] VWAP Sell Condition Met. VWAP: " + bidVWAP + ", bid price: " + bidPrice);
-                //extract vwap percentage change
-                    logger.info("[MYALGO] Bid price is high! Current price: " + bidPrice + " selling for: " + getPercentage(bidPrice, bidVWAP)+ "% above VWAP");
-                    timestamps.add(ts);
-
-                    return new CreateChildOrder(Side.SELL, rarePriceQuantity, bidPrice);
-                } else if (bidPrice >= bidVWAP) {
-                    logger.info("[MYALGO] VWAP Sell Condition Met. Creating child sell order.");
-                    logger.info("[MYALGO] Current price: " + bidPrice + " selling for: " + getPercentage(bidPrice, bidVWAP) + "% above VWAP");
-
-                    timestamps.add(ts);
-
-                    return new CreateChildOrder(Side.SELL, rarePriceQuantity, bidPrice);
-                } else {
-                    logger.info("[MYALGO] VWAP Sell Condition not Met. ");
-
-                }
+                logger.info("[MYALGO] PROFIT: " + profit + " --- TOTAL EARNED: " + totalEarnings + " --- TOTAL SPENT: " + totalSpendings + " --- TOTAL ORDERS: " + totalOrderCount);
 
                 return new CreateChildOrder(Side.BUY, rarePriceQuantity, askPrice);
 
+            // Check if the ask price is below the VWAP price
+            } else if  (askVWAP > askPrice) {
+                long buyQuantity = askQuantity / 3;  // Buy a portion of available quantity
+                amountOfSharesOwned += buyQuantity;
+                totalSpendings += askPrice * buyQuantity;
 
-                //create a buy order with normal quantity if ask price is good (between vwap and vwap threshold)
-                }else if (askVWAP >= askPrice){
-                    logger.info("[MYALGO] Volume-Weighted Av Price is " + askVWAP + "threshold: " + askVWAPThreshold + "price: " + askPrice);
-                    logger.info("[MYALGO] ask price is " + getPercentage(askPrice, askVWAP) + "% below VWAP ");
+                logger.info("[MYALGO] Creating a BUY order: " + buyQuantity + "@" + askPrice);
+                return new CreateChildOrder(Side.BUY, buyQuantity, askPrice);
+            }
 
-                    long goodPriceQuantity = askQuantity / 5;
-
-                    logger.info("[MYALGO]ORDER: " + goodPriceQuantity + "@" + askPrice + "created at: " + ts );
-                    return new CreateChildOrder(Side.BUY, goodPriceQuantity, askPrice) ;
-                }
-            else {
-                var childOrder = option.get();
-
-                logger.info("[MYALGO] VWAP Sell Condition not Met. Cancelling buy order");
-                return new CancelChildOrder(childOrder);
-                }
-
-         }
-
-        logger.info("[MYALGO] Have: " + totalOrderCount + " child orders, no further orders needed. All orders: " + allOrders);
-        logger.info("[MYALGO] PROFIT = " + profit);
-        logger.info("[MYALGO] ORDER COMPLETE");
-
+    }
+        profit = totalEarnings - totalSpendings;
+        logger.info("[MYALGO] PROFIT: " + profit + " --- TOTAL EARNED: " + totalEarnings + " --- TOTAL SPENT: " + totalSpendings + " --- TOTAL ORDERS: " + totalOrderCount);
         return NoAction.NoAction;
     }
+    //-------------------------------- HELPER METHOD -------------------------------------
 
-    private static long getPercentage(long price, double vwap) {
-        return Math.round((price - vwap) / vwap * 100);
-    }
+    // Helper method to calculate VWAP (Volume-Weighted Average Price) for either ask side or bid side
+    private double calculateVWAP(SimpleAlgoState state, boolean isAsk) {
+        long totalPriceByQuantity = 0;
+        long totalQuantity = 0;
+        int levels = isAsk ? state.getAskLevels() : state.getBidLevels();
 
-    private static double getAskVWAP(SimpleAlgoState state) {
-        //askVWAP logic
-        List<Long> askPrices = new ArrayList<>();
-        List<Long> askQuantities = new ArrayList<>();
-        int askLevels = state.getAskLevels();
+        for (int i = 0; i < levels; i++) {
 
-
-        long totalAskPriceByQuantities = 0;
-        long totalAskQuantities = 0;
-
-        for (int i = 0; i < askLevels ; i++) {
-            long askQuantity = state.getAskAt(i).quantity;
-            long askPrice = state.getAskAt(i).price;
-
-            totalAskQuantities += askQuantity;
-            totalAskPriceByQuantities += askQuantity * askPrice;
+            long price = isAsk ? state.getAskAt(i).price : state.getBidAt(i).price;
+            long quantity = isAsk ? state.getAskAt(i).quantity : state.getBidAt(i).quantity;
+            totalPriceByQuantity += price * quantity;
+            totalQuantity += quantity;
         }
-        double askVWAP = totalAskPriceByQuantities / totalAskQuantities;
-        return askVWAP;
-    }
-private static double getBidVWAP(SimpleAlgoState state) {
-    //bidVWAP logic
-    List<Long> bidPrices = new ArrayList<>();
-    List<Long> bidQuantities = new ArrayList<>();
-    int bidLevels = state.getBidLevels();
 
+        // Avoid division by zero if no quantities exist
+        if (totalQuantity == 0) return 0;
 
-    long totalBidPriceByQuantities = 0;
-    long totalBidQuantities = 0;
-
-    for (int i = 0; i < bidLevels ; i++) {
-        long bidQuantity = state.getBidAt(i).quantity;
-        long bidPrice = state.getBidAt(i).price;
-
-        totalBidQuantities += bidQuantity;
-        totalBidPriceByQuantities += bidQuantity * bidPrice;
-    }
-
-
-    double bidVWAP = totalBidPriceByQuantities / totalBidQuantities;
-    return bidVWAP;
+        return Math.floor(totalPriceByQuantity / totalQuantity);
     }
 }
