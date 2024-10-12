@@ -29,9 +29,9 @@ public class MyAlgoBackTest extends AbstractAlgoBackTest {
     @Test
     public void testExampleBackTest() throws Exception {
         //create a sample market data tick....
-//        send(createTick());
+        send(createTick());
 ////        //simple assert to check we had 1 order created
-//        assertEquals(3, container.getState().getChildOrders().size());
+        assertEquals(4, container.getState().getChildOrders().size());
 
         //when: market data moves towards us
 //        send(createTick2());
@@ -46,7 +46,7 @@ public class MyAlgoBackTest extends AbstractAlgoBackTest {
 //        send(createTightSpreadTick());
         //simple assert to check we had 3 orders created
 //        assertEquals(3, container.getState().getChildOrders().size());
-        send(testTick());
+//        send(testTick());
 
 
     }
