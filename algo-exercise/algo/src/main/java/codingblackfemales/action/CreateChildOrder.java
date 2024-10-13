@@ -27,7 +27,6 @@ public class CreateChildOrder implements Action {
         this.quantity = quantity;
         this.price = price;
         this.side = side;
-        //add new variable
     }
 
     @Override

@@ -30,6 +30,8 @@ public class OrderBook extends MarketDataEventListener {
         this.orderChannel = orderChannel;
     }
 
+
+
     private ReadOnlyMarketDataChannelPublishVisitor mktDataVisitor = new ReadOnlyMarketDataChannelPublishVisitor();
 
     private AskBookSide askBookSide = new AskBookSide();
@@ -159,7 +161,7 @@ public class OrderBook extends MarketDataEventListener {
             logger.info("[ORDERBOOK] Adding passive limit order to BID book" + limit);
             this.getBidBookSide().addLimitOrder(limit);
         }else{
-            logger.info("A[ORDERBOOK] dding passive limit order to ASK book" + limit);
+            logger.info("A[ORDERBOOK] Adding passive limit order to ASK book" + limit);
             this.getAskBookSide().addLimitOrder(limit);
         }
     }

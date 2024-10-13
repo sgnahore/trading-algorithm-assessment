@@ -4,7 +4,7 @@ import codingblackfemales.sotw.SimpleAlgoState;
 
 public class VWAPCalculator {
 
-    public double calculateVWAP(SimpleAlgoState state, boolean isAsk) {
+    public static double calculateVWAP(SimpleAlgoState state, boolean isAsk) {
         long totalPriceByQuantity = 0;
         long totalQuantity = 0;
         int levels = isAsk ? state.getAskLevels() : state.getBidLevels();
@@ -19,7 +19,7 @@ public class VWAPCalculator {
         // Avoid division by zero if no quantities exist
         if (totalQuantity == 0) return 0;
 
-        return Math.floor(totalPriceByQuantity / totalQuantity);
+        return Math.round((totalPriceByQuantity / totalQuantity) / 10.0f) * 10;
     }
 }
 

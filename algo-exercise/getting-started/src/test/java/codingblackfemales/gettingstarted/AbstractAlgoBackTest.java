@@ -87,7 +87,34 @@ public abstract class AbstractAlgoBackTest extends SequencerTestCase {
         return directBuffer;
     }
 
-    protected UnsafeBuffer createTick2(){
+    protected UnsafeBuffer createSpreadTooWide(){
+
+        final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+        final BookUpdateEncoder encoder = new BookUpdateEncoder();
+
+        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024);
+        final UnsafeBuffer directBuffer = new UnsafeBuffer(byteBuffer);
+
+        //write the encoded output to the direct buffer
+        encoder.wrapAndApplyHeader(directBuffer, 0, headerEncoder);
+
+        //set the fields to desired values
+        encoder.venue(Venue.XLON);
+        encoder.instrumentId(123L);
+        encoder.source(Source.STREAM);
+
+        encoder.bidBookCount(1)
+                .next().price(95L).size(100L);
+
+        encoder.askBookCount(1)
+                .next().price(105L).size(501L);
+
+
+        encoder.instrumentStatus(InstrumentStatus.CONTINUOUS);
+
+        return directBuffer;
+    }
+    protected UnsafeBuffer createBuyOkayPrice(){
 
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
         final BookUpdateEncoder encoder = new BookUpdateEncoder();
@@ -104,22 +131,22 @@ public abstract class AbstractAlgoBackTest extends SequencerTestCase {
         encoder.source(Source.STREAM);
 
         encoder.bidBookCount(3)
-                .next().price(95L).size(100L)
-                .next().price(93L).size(200L)
-                .next().price(91L).size(300L);
+                .next().price(98L).size(200L)
+                .next().price(97L).size(300L)
+                .next().price(91L).size(400L);
 
         encoder.askBookCount(4)
-                .next().price(98L).size(501L)
-                .next().price(101L).size(200L)
-                .next().price(110L).size(5000L)
-                .next().price(119L).size(5600L);
+                .next().price(95L).size(101L)
+                .next().price(100L).size(300L)
+                .next().price(101L).size(5000L)
+                .next().price(102L).size(5500L);
 
         encoder.instrumentStatus(InstrumentStatus.CONTINUOUS);
 
         return directBuffer;
     }
 
-    protected UnsafeBuffer createWideSpreadTick(){
+    protected UnsafeBuffer createNoBuyTick(){
 
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
         final BookUpdateEncoder encoder = new BookUpdateEncoder();
@@ -135,22 +162,23 @@ public abstract class AbstractAlgoBackTest extends SequencerTestCase {
         encoder.instrumentId(123L);
 
         encoder.bidBookCount(3)
-                .next().price(105L).size(500L)
-                .next().price(120L).size(1000L)
-                .next().price(150L).size(100L);
+                .next().price(96L).size(100L)
+                .next().price(110L).size(200L)
+                .next().price(111L).size(400L);
 
         encoder.askBookCount(4)
-                .next().price(90L).size(800L)    // A large-sized order at a lower price
-                .next().price(80L).size(300L)    // A big drop in price with lower volume
-                .next().price(60L).size(1500L)
-                .next().price(119L).size(5600L);
+                .next().price(99L).size(100L)
+                .next().price(98L).size(300L)
+                .next().price(98L).size(200L)
+                .next().price(98L).size(400L);
+
 
         encoder.instrumentStatus(InstrumentStatus.CONTINUOUS);
         encoder.source(Source.STREAM);
 
         return directBuffer;
     }
-    protected UnsafeBuffer testTick(){
+    protected UnsafeBuffer createBuyButNoSellTick(){
 
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
         final BookUpdateEncoder encoder = new BookUpdateEncoder();
@@ -165,21 +193,17 @@ public abstract class AbstractAlgoBackTest extends SequencerTestCase {
         encoder.venue(Venue.XLON);
         encoder.instrumentId(123L);
 
-        encoder.bidBookCount(4)
-                .next().price(100L).size(500L)
-                .next().price(101L).size(1000L)
-                .next().price(102L).size(100L)
-                .next().price(103L).size(100L);
+        encoder.bidBookCount(3)
+                .next().price(90L).size(100L)   // First bid price is lower than the VWAP
+                .next().price(95L).size(300L)   // Larger size to increase the VWAP
+                .next().price(99L).size(1L);  // Higher price with significant size
 
-        encoder.askBookCount(8)
-                .next().price(140L).size(800L)    // A large-sized order at a lower price
-                .next().price(139L).size(300L)    // A big drop in price with lower volume
-                .next().price(138L).size(300L)    // A big drop in price with lower volume
-                .next().price(136L).size(300L)    // A big drop in price with lower volume
-                .next().price(134L).size(300L)    // A big drop in price with lower volume
-                .next().price(130L).size(300L)    // A big drop in price with lower volume
-                .next().price(128L).size(1500L)
-                .next().price(170L).size(5600L);
+
+        encoder.askBookCount(4)
+                .next().price(87L).size(101L)
+                .next().price(92L).size(200L)
+                .next().price(96L).size(5000L)
+                .next().price(119L).size(5500L);
 
         encoder.instrumentStatus(InstrumentStatus.CONTINUOUS);
         encoder.source(Source.STREAM);
