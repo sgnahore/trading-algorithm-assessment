@@ -146,7 +146,7 @@ public class MyAlgoLogic implements AlgoLogic {
 
             ChildOrder lastOrder = activeOrders.get((int) activeOrdersCount - 1);
 
-            tradingContext.subtractOwnedShares(lastOrder.getQuantity());
+            tradingContext.addOwnedShares(lastOrder.getQuantity());
             tradingContext.subtractEarnings(lastOrder.getPrice() * lastOrder.getQuantity());
 
             logger.info("[MYALGO] Cancelling last order: " + lastOrder);
@@ -154,10 +154,10 @@ public class MyAlgoLogic implements AlgoLogic {
 
         }
 
-        logger.info("[MYALGO] FINAL: PROFIT: " + tradingContext.getTotalProfit() +
-                " --- TOTAL EARNED: " + tradingContext.getTotalEarnings() +
-                " --- TOTAL SPENT: " + tradingContext.getTotalSpendings() +
-                " --- TOTAL SHARES OWNED: " + tradingContext.getOwnedShares());
+        logger.info("[MYALGO] FINAL STATE \n PROFIT: " + tradingContext.getTotalProfit() +
+                "\n --- TOTAL EARNED: " + tradingContext.getTotalEarnings() +
+                "\n --- TOTAL SPENT: " + tradingContext.getTotalSpendings() +
+                "\n --- TOTAL SHARES OWNED: " + tradingContext.getOwnedShares());
 
         logger.info("trading complete with " + activeOrdersCount + " active orders");
         logger.info("all orders " + activeOrders.stream().collect(Collectors.toList()));
