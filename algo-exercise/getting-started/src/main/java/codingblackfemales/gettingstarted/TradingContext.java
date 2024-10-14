@@ -26,6 +26,9 @@ public class TradingContext {
     public void addEarnings(long amount) {
         totalEarnings += amount;
     }
+    public void subtractEarnings(long amount) {
+        totalEarnings -= amount;
+    }
 
     public long getTotalProfit() {
         totalProfit = totalEarnings - totalSpendings;

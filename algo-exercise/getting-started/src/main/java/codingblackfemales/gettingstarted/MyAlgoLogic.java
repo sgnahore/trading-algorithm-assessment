@@ -90,22 +90,22 @@ public class MyAlgoLogic implements AlgoLogic {
             logger.info("[MYALGO] Total Orders: " + totalOrderCount);
             logger.info("[MYALGO] PROFIT: " + tradingContext.getTotalProfit() +
                     " --- TOTAL EARNED: " + tradingContext.getTotalEarnings() +
-                    " --- TOTAL SPENT: " + tradingContext.getTotalSpendings());
+                    " --- TOTAL SPENT: " + tradingContext.getTotalSpendings() +
+                    " --- TOTAL SHARES OWNED: " + tradingContext.getOwnedShares());
 
         // BUY LOGIC - if we have less than two buy orders and there
         if (buyOrderCount < 2) {
-                logger.info("[MYALGO] VWAP: " + askVWAP + ", current price: " + bestAskPrice);
+                logger.info("[MYALGO] VWAP: " + initialAskVWAP + ", current price: " + bestAskPrice);
 
 
             //if the best ask price is lower than the average price, buy the whole quantity
             if (askVWAPLowerThreshold > bestAskPrice) {
-                logger.info("[MYALGO] Price is very good. VWAP: " + askVWAP + ", current price: " + bestAskPrice);
 
                 // Update trading context with buy action
                 tradingContext.addOwnedShares(askQuantity);
                 tradingContext.addSpendings(bestAskPrice * askQuantity);
 
-                logger.info("[MYALGO] Creating BUY order with whole quantity. Details: " + askQuantity + "@" + bestAskPrice);
+                logger.info("[MYALGO] Price is very good. Creating BUY order with whole quantity. Details: " + askQuantity + "@" + bestAskPrice);
                 return new CreateChildOrder(Side.BUY, askQuantity, bestAskPrice);
 
             //if the best ask price is between the ask vwap and it's threshold
@@ -145,14 +145,19 @@ public class MyAlgoLogic implements AlgoLogic {
         if (activeOrdersCount > 4) {
 
             ChildOrder lastOrder = activeOrders.get((int) activeOrdersCount - 1);
+
+            tradingContext.subtractOwnedShares(lastOrder.getQuantity());
+            tradingContext.subtractEarnings(lastOrder.getPrice() * lastOrder.getQuantity());
+
             logger.info("[MYALGO] Cancelling last order: " + lastOrder);
             return new CancelChildOrder(lastOrder);
 
         }
 
-        logger.info("[MYALGO] PROFIT: " + tradingContext.getTotalProfit() +
+        logger.info("[MYALGO] FINAL: PROFIT: " + tradingContext.getTotalProfit() +
                 " --- TOTAL EARNED: " + tradingContext.getTotalEarnings() +
-                " --- TOTAL SPENT: " + tradingContext.getTotalSpendings());
+                " --- TOTAL SPENT: " + tradingContext.getTotalSpendings() +
+                " --- TOTAL SHARES OWNED: " + tradingContext.getOwnedShares());
 
         logger.info("trading complete with " + activeOrdersCount + " active orders");
         logger.info("all orders " + activeOrders.stream().collect(Collectors.toList()));
