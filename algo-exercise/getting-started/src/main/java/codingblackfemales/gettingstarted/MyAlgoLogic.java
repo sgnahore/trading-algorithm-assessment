@@ -48,8 +48,10 @@ public class MyAlgoLogic implements AlgoLogic {
         // Get active orders and count orders
         var activeOrders = state.getActiveChildOrders();
         int totalOrderCount = state.getChildOrders().size();
+        int maxOrdersCount = 6;
         long activeOrdersCount = state.getActiveChildOrders().stream().count();
 
+        //initialise VWAP for eiter side of the book
         if (initialAskVWAP == null) {
             initialAskVWAP = askVWAP;
             logger.info("[MYALGO] Initial ask VWAP set to: " + initialAskVWAP);
@@ -77,16 +79,16 @@ public class MyAlgoLogic implements AlgoLogic {
 
         // Get details of the spread
         long currentSpread = bestAsk.price - bestBid.price;
-        long maxSpreadAllowed = 3;
+        long maxSpreadAllowed = 5;
 
         //EXIT LOGIC - if we haven't created any orders and the spread is too wide, then exit
-        if (totalOrderCount == 0 && currentSpread > maxSpreadAllowed) {
+        if (totalOrderCount == 0 && currentSpread > maxSpreadAllowed ) {
             logger.info("[MYALGO] Spread too wide, not trading. Spread: " + currentSpread);
              return NoAction.NoAction;
         }
 
-        //BUY AND SELL
-        if (totalOrderCount <= 4){
+        //BUY AND SELL - entering the logic
+        if (totalOrderCount <= maxOrdersCount){
             logger.info("[MYALGO] Total Orders: " + totalOrderCount);
             logger.info("[MYALGO] PROFIT: " + tradingContext.getTotalProfit() +
                     " --- TOTAL EARNED: " + tradingContext.getTotalEarnings() +
@@ -95,7 +97,7 @@ public class MyAlgoLogic implements AlgoLogic {
 
         // BUY LOGIC - if we have less than two buy orders and there
         if (buyOrderCount < 2) {
-                logger.info("[MYALGO] VWAP: " + initialAskVWAP + ", current price: " + bestAskPrice);
+                logger.info("[MYALGO] ASK VWAP: " + initialAskVWAP + ", current price: " + bestAskPrice);
 
 
             //if the best ask price is lower than the average price, buy the whole quantity
@@ -128,10 +130,10 @@ public class MyAlgoLogic implements AlgoLogic {
             // if we have two buy orders and we haven't made two sells, sell
         if (buyOrderCount == 2 && sellOrderCount <= 2) {
 
-            ChildOrder childOrder = activeOrders.stream().findFirst().get();
-            if (bestBidPrice >= initialBidVWAP) {
+            if (bestBidPrice >= initialBidVWAP ) {
 
-                logger.info("[MYALGO] Attempting to sell since we have " + buyOrderCount + " buy orders.");
+                logger.info("[MYALGO] Attempting to sell order since we have " + buyOrderCount + " buy orders.");
+                ChildOrder childOrder = activeOrders.stream().findFirst().get();
 
                     long firstBuyOrderQuantity = childOrder.getQuantity();
 
@@ -142,24 +144,31 @@ public class MyAlgoLogic implements AlgoLogic {
                     return new CreateChildOrder(Side.SELL, firstBuyOrderQuantity, bestBidPrice);
             }}
         }
-        if (activeOrdersCount > 4) {
 
-            ChildOrder lastOrder = activeOrders.get((int) activeOrdersCount - 1);
+        if (activeOrdersCount > 4 || tradingContext.getOwnedShares() < 0) {
+            //if there is a filled quantity that hasn't been used, cancel that order
 
-            tradingContext.addOwnedShares(lastOrder.getQuantity());
-            tradingContext.subtractEarnings(lastOrder.getPrice() * lastOrder.getQuantity());
+            for (var i=0; i<activeOrders.size(); i++){
+                if (activeOrders.get(i).getFilledQuantity() > 0 ){
+                    tradingContext.addOwnedShares(activeOrders.get(i).getQuantity());
+                    tradingContext.subtractEarnings(activeOrders.get(i).getPrice() * activeOrders.get(i).getQuantity());
 
-            logger.info("[MYALGO] Cancelling last order: " + lastOrder);
-            return new CancelChildOrder(lastOrder);
+                    logger.info("[MYALGO] Cancelling unfilled order: " + activeOrders.get(i).getOrderId());
+
+                    return new CancelChildOrder(activeOrders.get(i));
+                }
+            }
+
+
 
         }
-
-        logger.info("[MYALGO] FINAL STATE \n PROFIT: " + tradingContext.getTotalProfit() +
+        //log the final state#
+        logger.info("[MYALGO] FINAL STATE \n --- PROFIT: " + tradingContext.getTotalProfit() +
                 "\n --- TOTAL EARNED: " + tradingContext.getTotalEarnings() +
                 "\n --- TOTAL SPENT: " + tradingContext.getTotalSpendings() +
                 "\n --- TOTAL SHARES OWNED: " + tradingContext.getOwnedShares());
 
-        logger.info("trading complete with " + activeOrdersCount + " active orders");
-        logger.info("all orders " + activeOrders.stream().collect(Collectors.toList()));
+
+        logger.info("TRADING COMPLETE " + activeOrdersCount + " active orders");
         return NoAction.NoAction;
     }}

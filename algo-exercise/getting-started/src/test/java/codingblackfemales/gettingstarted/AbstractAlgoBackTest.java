@@ -136,7 +136,7 @@ public abstract class AbstractAlgoBackTest extends SequencerTestCase {
                 .next().price(91L).size(400L);
 
         encoder.askBookCount(4)
-                .next().price(95L).size(101L)
+                .next().price(98L).size(101L)
                 .next().price(100L).size(300L)
                 .next().price(101L).size(5000L)
                 .next().price(102L).size(5500L);

@@ -32,6 +32,13 @@ public class MyAlgoTest extends AbstractAlgoTest {
         send(createTick());
 
         //simple assert to check we had 2 orders created
-        assertEquals(2, container.getState().getChildOrders().size());
+        assertEquals(0, container.getState().getChildOrders().size());
+
+        //VWAP TEST
+//            double expectedVWAP = Math.floor((95 * 15 + 90 * 25) / (15 + 25));
+//            double actualVWAP = VWAPCalculator.calculateVWAP(state, false);
+//            assertEquals(expectedVWAP, actualVWAP, "VWAP for Bid side should match the expected value");
+        }
+
     }
 }

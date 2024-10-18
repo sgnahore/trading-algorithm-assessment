@@ -20,6 +20,6 @@ public class VWAPCalculator {
         // Avoid division by zero if no quantities exist
         if (totalQuantity == 0) return 0;
 
-        return Math.floor(totalPriceByQuantity / totalQuantity);
+        return Math.round(totalPriceByQuantity / totalQuantity);
     }
 }

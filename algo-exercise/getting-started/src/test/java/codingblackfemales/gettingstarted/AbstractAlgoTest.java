@@ -76,6 +76,38 @@ public abstract class AbstractAlgoTest extends SequencerTestCase {
         return directBuffer;
     }
 
+    protected UnsafeBuffer createVWAPTest(){
+
+        final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+        final BookUpdateEncoder encoder = new BookUpdateEncoder();
+
+        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024);
+        final UnsafeBuffer directBuffer = new UnsafeBuffer(byteBuffer);
+
+        //write the encoded output to the direct buffer
+        encoder.wrapAndApplyHeader(directBuffer, 0, headerEncoder);
+
+        //set the fields to desired values
+        encoder.venue(Venue.XLON);
+        encoder.instrumentId(123L);
+
+        encoder.askBookCount(4)
+                .next().price(100L).size(101L)
+                .next().price(110L).size(200L)
+                .next().price(112L).size(300L)
+                .next().price(115L).size(5000L);
+
+        encoder.bidBookCount(3)
+                .next().price(98L).size(100L)
+                .next().price(95L).size(200L)
+                .next().price(91L).size(300L);
+
+        encoder.instrumentStatus(InstrumentStatus.CONTINUOUS);
+        encoder.source(Source.STREAM);
+
+        return directBuffer;
+    }
+
 
 
 }
