@@ -41,4 +41,4 @@ public class MyAlgoTest extends AbstractAlgoTest {
         }
 
     }
-}
+
