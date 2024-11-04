@@ -3,7 +3,7 @@
 
 ## Overview
 
-`MyAlgoLogic` is a simple trading algorithm implementation designed to evaluate market conditions and place orders based on a few key strategies. The algorithm follows a Volume Weighted Average Price (VWAP) strategy and dynamically responds to market fluctuations. It is implemented as part of a trading framework that includes order books, child orders, and market data for ask and bid levels. The algorithm also maintains a `TradingContext` to track performance metrics like profit, earnings, spendings, and owned shares.
+`MyAlgoLogic` is a simple trading algorithm implementation designed to evaluate market conditions and place orders based on a few key strategies. The algorithm follows a Volume Weighted Average Price (VWAP) strategy and dynamically responds to market fluctuations. The algorithm also maintains a `TradingContext` to track performance metrics like profit, earnings, spendings, and owned shares.
 
 ## Features
 
