@@ -12,7 +12,8 @@ This is a simple trading algorithm implementation designed to evaluate market co
 - Running Tests
 
 
-## Requirements[]
+## Requirements
+
 •	JDK 17 or higher
 •	Apache Maven 3.6 or newer
 
