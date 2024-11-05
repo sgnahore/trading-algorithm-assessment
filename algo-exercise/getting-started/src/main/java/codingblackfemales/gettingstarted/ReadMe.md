@@ -14,8 +14,8 @@ This is a simple trading algorithm implementation designed to evaluate market co
 
 ## Requirements
 
-•	JDK 17 or higher
-•	Apache Maven 3.6 or newer
+- JDK 17 or higher
+- Apache Maven 3.6 or newer
 
 ## Installation
 1. Clone the repository:
