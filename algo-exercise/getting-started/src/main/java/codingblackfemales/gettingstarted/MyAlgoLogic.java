@@ -88,7 +88,7 @@ public class MyAlgoLogic implements AlgoLogic {
         }
 
         //BUY AND SELL - entering the logic
-        if (totalOrderCount <= maxOrdersCount){
+        if (totalOrderCount <= maxOrdersCount) {
             logger.info("[MYALGO] Total Orders: " + totalOrderCount);
             logger.info("[MYALGO] PROFIT: " + tradingContext.getTotalProfit() +
                     " --- TOTAL EARNED: " + tradingContext.getTotalEarnings() +
@@ -96,7 +96,7 @@ public class MyAlgoLogic implements AlgoLogic {
                     " --- TOTAL SHARES OWNED: " + tradingContext.getOwnedShares());
 
         // BUY LOGIC - if we have less than two buy orders and there
-        if (buyOrderCount < 2) {
+         if (buyOrderCount < 2) {
                 logger.info("[MYALGO] ASK VWAP: " + initialAskVWAP + ", current price: " + bestAskPrice);
 
 
@@ -145,7 +145,7 @@ public class MyAlgoLogic implements AlgoLogic {
             }}
         }
 
-        if (activeOrdersCount > 4 || tradingContext.getOwnedShares() < 0) {
+          if (activeOrdersCount > 4 || tradingContext.getOwnedShares() < 0) {
             //if there is a filled quantity that hasn't been used, cancel that order
 
             for (var i=0; i<activeOrders.size(); i++){
